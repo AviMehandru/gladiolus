@@ -1,2 +1,4 @@
 secrets/*
 .vscode/*
+playground/output/*
+.DS_Store
