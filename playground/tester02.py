@@ -12,7 +12,7 @@ p.user_login(email = mySecretsDict['email'], password = mySecretsDict['password'
 
 course = p.network(mySecretsDict['course'])
 
-dictOfPosts = []
+dictOfPosts = {}
 
 postCounter = 1
 
