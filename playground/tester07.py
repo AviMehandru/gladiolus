@@ -26,13 +26,12 @@ fetchList = []
 
 if len(previousDatesDict) != len(processedFeed): 
     for i in processedFeed: 
-        if previousDatesDict.get(i, None) is None: 
+        if previousDatesDict.get(str(i), None) is None: 
             fetchList.append(i)
 
 for i in processedFeed: 
-    if processedFeed.get(i, None) != previousDatesDict.get(str(i), None): 
+    if (processedFeed.get(i, None) != previousDatesDict.get(str(i), None)) and (i not in fetchList): 
         fetchList.append(i)
-        print(f'b{i}: {processedFeed.get(i, None)}, {previousDatesDict.get(str(i), None)}, dtypes: {type(i)}, {type(processedFeed.get(i, None))}', {type(previousDatesDict.get(i, None))})
 
 postCounter = 1
 
