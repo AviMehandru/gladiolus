@@ -3,6 +3,7 @@ import json
 import time
 import random
 import datetime
+import os
 
 def setup(): 
     global p 
@@ -26,6 +27,15 @@ def setup():
     course = p.network(mySecretsDict['course'])
 
 def pullAll(): 
+    os.makedirs(postsDirectory, exist_ok = True)
+
+    myFeed = course.get_feed(limit = 999999, offset = 0)
+
+    feedDates = {}
+
+    for i in myFeed['feed']: 
+        feedDates[i['nr']] = i['modified']
+
     dictOfPosts = {}
 
     postCounter = 1
@@ -49,26 +59,29 @@ def pullAll():
         except FileNotFoundError: 
             oldLastUpdatedDict = {}
         
-        oldLastUpdatedDict[i] = dictOfPosts[i]['change_log'][-1]['when']
+        oldLastUpdatedDict[str(i)] = feedDates.get(i, None)
 
         with open(f'{postsDirectory}lastUpdated.json', 'w', encoding = 'utf-8') as f: 
             json.dump(oldLastUpdatedDict, f, indent = 4)
 
 def pullFeed(): 
-    with open(f'{postsDirectory}lastUpdated.json', 'r', encoding = 'utf-8') as f:
-        previousDatesDict = json.load(f)
+    try: 
+        with open(f'{postsDirectory}lastUpdated.json', 'r', encoding = 'utf-8') as f:
+            previousDatesDict = json.load(f)
+    except FileNotFoundError: 
+        previousDatesDict = {}
     
     myFeed = course.get_feed(limit = 999999, offset = 0)
 
     processedFeed = {}
 
     for i in myFeed['feed']: 
-        processedFeed[i['nr']] = i['log'][-1]['t']
+        processedFeed[i['nr']] = i['modified']
 
     fetchList = []
 
     for i in processedFeed: 
-        if (processedFeed.get(i, None) != previousDatesDict.get(str(i), None)) and (i not in fetchList): 
+        if (processedFeed.get(i, None) != previousDatesDict.get(str(i), None)): 
             fetchList.append(i)
 
     postCounter = 1
@@ -86,15 +99,26 @@ def pullFeed():
             with open(f'{postsDirectory}post_{i}', 'w', encoding = 'utf-8') as f: 
                 json.dump(dictOfPosts[i], f, indent = 4)
 
+            previousDatesDict[str(i)] = processedFeed[i]
+
+        with open(f'{postsDirectory}lastUpdated.json', 'w', encoding = 'utf-8') as f: 
+            json.dump(previousDatesDict, f, indent = 4)
+
 def main(): 
     pullPostsDate = datetime.datetime.now().replace(second = 0, microsecond = 0)
     pullFeedDate = datetime.datetime.now().replace(second = 0, microsecond = 0)
 
-    setup()
+    while True: 
+        try: 
+            setup()
+            break
+        except Exception as e: 
+            print('An error occurred:', e)
+            time.sleep(60)
     
     while True: 
         try: 
-            if datetime.datetime.now().replace(second = 0, microsecond = 0) >= pullPostsDate: 
+            if datetime.datetime.now() >= pullPostsDate: 
                 pullAll()
 
                 daysToSunday = 6 - datetime.datetime.now().weekday()
@@ -102,14 +126,18 @@ def main():
                 if daysToSunday <= 0:
                     daysToSunday += 7
                 
-                pullPostsDate = (pullPostsDate + datetime.timedelta(days = daysToSunday)).replace(hour = random.randint(5, 12), minute = random.randint(1, 59))
+                pullPostsDate = (datetime.datetime.now() + datetime.timedelta(days = daysToSunday)).replace(hour = random.randint(5, 12), minute = random.randint(1, 59))
             if datetime.datetime.now().replace(second = 0, microsecond = 0) >= pullFeedDate.replace(second = 0, microsecond = 0): 
                 pullFeed()
 
-                pullFeedDate = pullFeedDate + datetime.timedelta(minutes = random.randint(1, 10))
-        except Exception: 
-            setup()
-            time.sleep(10)
+                pullFeedDate = datetime.datetime.now() + datetime.timedelta(minutes = random.randint(1, 10))
+        except Exception as e: 
+            print('An error occurred:', e)
+            time.sleep(60)
+            try:
+                setup()
+            except Exception as d:
+                print('An error occurred:', d)
 
         time.sleep(30)
 
