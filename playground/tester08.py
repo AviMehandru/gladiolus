@@ -6,6 +6,7 @@ import datetime
 import os
 
 def setup(): 
+    print('Starting setup')
     global p 
     global mySecretsDict
     global previousDatesDict
@@ -25,8 +26,11 @@ def setup():
     p.user_login(email = mySecretsDict['email'], password = mySecretsDict['password'])
 
     course = p.network(mySecretsDict['course'])
+    print('Ending setup')
 
 def pullAll(): 
+    print('Starting full pull')
+
     os.makedirs(postsDirectory, exist_ok = True)
 
     myFeed = course.get_feed(limit = 999999, offset = 0)
@@ -35,6 +39,8 @@ def pullAll():
 
     for i in myFeed['feed']: 
         feedDates[i['nr']] = i['modified']
+
+    print('Pulled feed for full pull')
 
     dictOfPosts = {}
 
@@ -64,7 +70,11 @@ def pullAll():
         with open(f'{postsDirectory}lastUpdated.json', 'w', encoding = 'utf-8') as f: 
             json.dump(oldLastUpdatedDict, f, indent = 4)
 
+    print('Saved all posts')
+
 def pullFeed(): 
+    print('Starting feed pull')
+
     try: 
         with open(f'{postsDirectory}lastUpdated.json', 'r', encoding = 'utf-8') as f:
             previousDatesDict = json.load(f)
@@ -88,6 +98,8 @@ def pullFeed():
 
     dictOfPosts = {}
 
+    print('Pulled and filtered')
+
     if len(fetchList) != 0: 
         for i in fetchList: 
             dictOfPosts[i] = course.get_post(i)
@@ -103,6 +115,8 @@ def pullFeed():
 
         with open(f'{postsDirectory}lastUpdated.json', 'w', encoding = 'utf-8') as f: 
             json.dump(previousDatesDict, f, indent = 4)
+
+    print('Saved feed')
 
 def main(): 
     pullPostsDate = datetime.datetime.now().replace(second = 0, microsecond = 0)
@@ -127,10 +141,16 @@ def main():
                     daysToSunday += 7
                 
                 pullPostsDate = (datetime.datetime.now() + datetime.timedelta(days = daysToSunday)).replace(hour = random.randint(5, 12), minute = random.randint(1, 59))
+            
+                print('while True pulling all posts')
+
             if datetime.datetime.now().replace(second = 0, microsecond = 0) >= pullFeedDate.replace(second = 0, microsecond = 0): 
                 pullFeed()
 
                 pullFeedDate = datetime.datetime.now() + datetime.timedelta(minutes = random.randint(1, 10))
+        
+                print('while True pulling feed')
+
         except Exception as e: 
             print('An error occurred:', e)
             time.sleep(60)
